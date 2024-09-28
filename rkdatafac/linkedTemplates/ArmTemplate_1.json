@@ -1,0 +1,1395 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "rkdatafac"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/lkp_pipe')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "select folderName from Folder",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_Azure_SQL",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "Copy data",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "BinarySource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true,
+												"wildcardFileName": "Data.txt",
+												"deleteFilesAfterCompletion": false
+											},
+											"formatSettings": {
+												"type": "BinaryReadSettings"
+											}
+										},
+										"sink": {
+											"type": "BinarySink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_Azure_Source",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "LS_Azure_Src",
+											"type": "DatasetReference",
+											"parameters": {
+												"FolderName": {
+													"value": "@item()",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2024-09-24T14:00:47Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Aggregate_PQ')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "WranglingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"name": "DS_Azure_CSV_Emp",
+							"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> DS_Azure_CSV_Emp",
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							}
+						}
+					],
+					"script": "section Section1;\r\nshared DS_Azure_CSV_Emp = let AdfDoc = AzureStorage.BlobContents(\"https://rkstoragecontainer.blob.core.windows.net/src/Emp.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared UserQuery = let Source = #\"DS_Azure_CSV_Emp\",\r\n  #\"Changed column type\" = Table.TransformColumnTypes(Source, {{\"empno\", Int64.Type}, {\"ename\", type text}, {\"job\", type text}, {\"mgr\", Int64.Type}, {\"hiredate\", type text}, {\"sal\", Int64.Type}, {\"comm\", Int64.Type}, {\"deptno\", Int64.Type}}),\r\n  #\"Grouped rows\" = Table.Group(#\"Changed column type\", {\"deptno\"}, {{\"TotSal\", each List.Sum([sal]), type nullable number}}) in #\"Grouped rows\";\r\n",
+					"documentLocale": "en-us"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Merge_PQ')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "WranglingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"name": "DS_Azure_CSV_Emp",
+							"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> DS_Azure_CSV_Emp",
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							}
+						},
+						{
+							"name": "DS_Azure_CSV_Dept",
+							"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> DS_Azure_CSV_Dept",
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Dept",
+								"type": "DatasetReference"
+							}
+						}
+					],
+					"script": "section Section1;\r\nshared DS_Azure_CSV_Emp = let AdfDoc = AzureStorage.BlobContents(\"https://rkstoragecontainer.blob.core.windows.net/src/Emp.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared DS_Azure_CSV_Dept = let AdfDoc = AzureStorage.BlobContents(\"https://rkstoragecontainer.blob.core.windows.net/src/Dept.csv\"),Csv = Csv.Document(AdfDoc, [Delimiter = \",\", Encoding = TextEncoding.Utf8, QuoteStyle = QuoteStyle.Csv]), PromotedHeaders = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]) in  PromotedHeaders;\r\nshared UserQuery = let Source = #\"DS_Azure_CSV_Emp\",\r\n  #\"Merged queries\" = Table.NestedJoin(Source, {\"deptno\"}, DS_Azure_CSV_Dept, {\"deptno\"}, \"DS_Azure_CSV_Dept\", JoinKind.Inner),\r\n  #\"Expanded DS_Azure_CSV_Dept\" = Table.ExpandTableColumn(#\"Merged queries\", \"DS_Azure_CSV_Dept\", {\"deptno\", \"dname\", \"location\"}, {\"deptno.1\", \"dname\", \"location\"}),\r\n  #\"Removed columns\" = Table.RemoveColumns(#\"Expanded DS_Azure_CSV_Dept\", {\"deptno.1\"}) in #\"Removed columns\";\r\n",
+					"documentLocale": "en-us"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_AlterRow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_source1",
+								"type": "DatasetReference"
+							},
+							"name": "sourcealterrow"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_SQ",
+								"type": "DatasetReference"
+							},
+							"name": "sinkemp"
+						}
+					],
+					"transformations": [
+						{
+							"name": "alterRowempdata"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id as integer,",
+						"          first_name as string,",
+						"          last_name as string,",
+						"          salary as integer,",
+						"          location as string,",
+						"          department as integer,",
+						"          Gender as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourcealterrow",
+						"sourcealterrow alterRow(deleteIf(department==50),",
+						"     upsertIf(department==20)) ~> alterRowempdata",
+						"alterRowempdata sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:true,",
+						"     upsertable:false,",
+						"     keys:['id'],",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> sinkemp"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_Conditional Split')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "Emp"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkdept10"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkdept20"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkdept30"
+						}
+					],
+					"transformations": [
+						{
+							"name": "splitondeptno"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as string,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as string,",
+						"          hiredate as string,",
+						"          sal as string,",
+						"          comm as string,",
+						"          deptno as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> Emp",
+						"Emp split(equals(deptno, '10'),",
+						"     equals(deptno, '20'),",
+						"     equals(deptno, '30'),",
+						"     disjoint: false) ~> splitondeptno@(dept10, dept20, dept30, otherdepts)",
+						"splitondeptno@dept10 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['dept10'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkdept10",
+						"splitondeptno@dept20 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['dept20'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkdept20",
+						"splitondeptno@dept30 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['dept30'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkdept30"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_Exists')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "sourceemp"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Dept",
+								"type": "DatasetReference"
+							},
+							"name": "sourcdept"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkempdept"
+						}
+					],
+					"transformations": [
+						{
+							"name": "existsempdept"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as string,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as string,",
+						"          hiredate as string,",
+						"          sal as string,",
+						"          comm as string,",
+						"          deptno as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceemp",
+						"source(output(",
+						"          deptno as string,",
+						"          dname as string,",
+						"          location as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourcdept",
+						"sourceemp, sourcdept exists(sourceemp@deptno == sourcdept@deptno,",
+						"     negate:true,",
+						"     broadcast: 'auto')~> existsempdept",
+						"existsempdept sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['deptexists.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkempdept"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_FlattenTran')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Source_Json",
+								"type": "DatasetReference"
+							},
+							"name": "sourcerk"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkflat"
+						}
+					],
+					"transformations": [
+						{
+							"name": "flattenrkjson"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id as string,",
+						"          name as string,",
+						"          skills as string[],",
+						"          Address as (state as string, country as string, zipcode as string),",
+						"          Contact as (Phone as string, email as string)",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     documentForm: 'singleDocument') ~> sourcerk",
+						"sourcerk foldDown(unroll(skills),",
+						"     mapColumn(",
+						"          id,",
+						"          name,",
+						"          skills,",
+						"          Address = Address.state,",
+						"          {Address.zipcode} = Address.country,",
+						"          Contact = Contact.Phone,",
+						"          {Contact.Phone} = Contact.email",
+						"     ),",
+						"     skipDuplicateMapInputs: false,",
+						"     skipDuplicateMapOutputs: false) ~> flattenrkjson",
+						"flattenrkjson sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['rk_json_flatten.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkflat"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_Lookup')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "sourceemp"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Dept",
+								"type": "DatasetReference"
+							},
+							"name": "sourcedept"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinklookup"
+						}
+					],
+					"transformations": [
+						{
+							"name": "lookupempdept"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as string,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as string,",
+						"          hiredate as string,",
+						"          sal as string,",
+						"          comm as string,",
+						"          deptno as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceemp",
+						"source(output(",
+						"          deptno as string,",
+						"          dname as string,",
+						"          location as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourcedept",
+						"sourceemp, sourcedept lookup(sourceemp@deptno == sourcedept@deptno,",
+						"     multiple: false,",
+						"     pickup: 'any',",
+						"     broadcast: 'auto')~> lookupempdept",
+						"lookupempdept sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['empdeptlookup.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinklookup"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_NewBranch')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "sourceemp"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Dept",
+								"type": "DatasetReference"
+							},
+							"name": "sourcedept"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sink2"
+						}
+					],
+					"transformations": [
+						{
+							"name": "aggregateemp"
+						},
+						{
+							"name": "joinempdept"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as integer,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as integer,",
+						"          hiredate as string,",
+						"          sal as integer,",
+						"          comm as integer,",
+						"          deptno as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceemp",
+						"source(output(",
+						"          deptno as integer,",
+						"          dname as string,",
+						"          location as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourcedept",
+						"sourceemp aggregate(groupBy(deptno),",
+						"     {Total Employees} = count(empno)) ~> aggregateemp",
+						"sourceemp, sourcedept join(sourceemp@deptno == sourcedept@deptno,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinempdept",
+						"joinempdept sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['empjoinout.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1",
+						"aggregateemp sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['emptotal.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink2"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_ParameterizeMapping')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_Source3",
+								"type": "DatasetReference"
+							},
+							"name": "sourceempnew"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkemp"
+						}
+					],
+					"transformations": [
+						{
+							"name": "filterempdata"
+						}
+					],
+					"scriptLines": [
+						"parameters{",
+						"     Department as integer",
+						"}",
+						"source(output(",
+						"          id as integer,",
+						"          Name as string,",
+						"          Gender as string,",
+						"          salary as integer,",
+						"          department as integer,",
+						"          location as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceempnew",
+						"sourceempnew filter(department == $Department) ~> filterempdata",
+						"filterempdata sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['emp_param_mapping.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkemp"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_Pivot')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_source1",
+								"type": "DatasetReference"
+							},
+							"name": "sourceEmpNew"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkPivot"
+						}
+					],
+					"transformations": [
+						{
+							"name": "pivotTrans"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id as string,",
+						"          first_name as string,",
+						"          last_name as string,",
+						"          email as string,",
+						"          location as string,",
+						"          department as string,",
+						"          Gender as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceEmpNew",
+						"sourceEmpNew pivot(groupBy(department),",
+						"     pivotBy(Gender),",
+						"     {} = count(id),",
+						"     columnNaming: 'Total_$N$V_Employees',",
+						"     lateral: true) ~> pivotTrans",
+						"pivotTrans sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['EmpPivot.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkPivot"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_Select')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "sourceemp"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkselect"
+						}
+					],
+					"transformations": [
+						{
+							"name": "selectemp"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as integer,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as integer,",
+						"          hiredate as date,",
+						"          sal as integer,",
+						"          comm as integer,",
+						"          deptno as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceemp",
+						"sourceemp select(mapColumn(",
+						"          empNumber = empno,",
+						"          deptno,",
+						"          Ename = ename,",
+						"          salary = sal",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectemp",
+						"selectemp sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['empselect.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkselect"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_Union')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_source1",
+								"type": "DatasetReference"
+							},
+							"name": "sourceempdata1"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_Source2",
+								"type": "DatasetReference"
+							},
+							"name": "sourceempdata2"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_Source3",
+								"type": "DatasetReference"
+							},
+							"name": "sourceempdata3"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkempdata"
+						}
+					],
+					"transformations": [
+						{
+							"name": "unionempdata"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          id as string,",
+						"          first_name as string,",
+						"          last_name as string,",
+						"          email as string,",
+						"          location as string,",
+						"          department as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceempdata1",
+						"source(output(",
+						"          id as string,",
+						"          first_name as string,",
+						"          last_name as string,",
+						"          email as string,",
+						"          location as string,",
+						"          department as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceempdata2",
+						"source(output(",
+						"          id as string,",
+						"          first_name as string,",
+						"          last_name as string,",
+						"          email as string,",
+						"          location as string,",
+						"          department as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceempdata3",
+						"sourceempdata1, sourceempdata2, sourceempdata3 union(byName: true)~> unionempdata",
+						"unionempdata sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['emadatafull.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkempdata"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_WindowTran')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "sourcewindowtran"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkwindow"
+						}
+					],
+					"transformations": [
+						{
+							"name": "windowemp"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as integer,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as integer,",
+						"          hiredate as date,",
+						"          sal as integer,",
+						"          comm as integer,",
+						"          deptno as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourcewindowtran",
+						"sourcewindowtran window(over(deptno),",
+						"     desc(sal, true),",
+						"     DenseRank = denseRank()) ~> windowemp",
+						"windowemp sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['emp_window.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkwindow"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_derivedcolumns')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "empsource"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinkderived"
+						}
+					],
+					"transformations": [
+						{
+							"name": "derivedColumnlocation"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as string,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as string,",
+						"          hiredate as string,",
+						"          sal as string,",
+						"          comm as string,",
+						"          deptno as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> empsource",
+						"empsource derive(jobName = initCap(mgr),",
+						"          NewHiredate = iif(isNull(hiredate),'Unknown',hiredate)) ~> derivedColumnlocation",
+						"derivedColumnlocation sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['empDerived.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinkderived"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_filter_trans')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "Emp"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "Emp30"
+						}
+					],
+					"transformations": [
+						{
+							"name": "filteremp"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as string,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as string,",
+						"          hiredate as string,",
+						"          sal as string,",
+						"          comm as string,",
+						"          deptno as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> Emp",
+						"Emp filter(equals(deptno,'30')) ~> filteremp",
+						"filteremp sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['Emp30.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> Emp30"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_joinfilesflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "empsource"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "deptsource"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Dept",
+								"type": "DatasetReference"
+							},
+							"name": "empdeptsink"
+						}
+					],
+					"transformations": [
+						{
+							"name": "joinempdept"
+						},
+						{
+							"name": "ModifyColumns1",
+							"description": "Autogenerated by data preview actions"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as integer,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as integer,",
+						"          hiredate as date,",
+						"          sal as integer,",
+						"          comm as integer,",
+						"          deptno as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> empsource",
+						"source(output(",
+						"          deptno as integer,",
+						"          dname as string,",
+						"          location as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> deptsource",
+						"ModifyColumns1, deptsource join(empsource@deptno == deptsource@deptno,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinempdept",
+						"empsource derive(job = lower(job)) ~> ModifyColumns1",
+						"joinempdept sink(allowSchemaDrift: true,",
+						"     validateSchema: true,",
+						"     input(",
+						"          deptno as string,",
+						"          dname as string,",
+						"          location as string",
+						"     ),",
+						"     partitionFileNames:['empdept.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          empno,",
+						"          ename,",
+						"          sal,",
+						"          deptno = empsource@deptno,",
+						"          dname,",
+						"          loc = location",
+						"     ),",
+						"     partitionBy('hash', 1),",
+						"     format: 'table') ~> empdeptsink"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_mapjoin')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_SQL",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_SQ",
+								"type": "DatasetReference"
+							},
+							"name": "source2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_SQL_Blob",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "join1",
+							"description": "Inner join on dbo.emp and dbo.dept"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as integer,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as integer,",
+						"          hiredate as date,",
+						"          sal as integer,",
+						"          comm as integer,",
+						"          deptno as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source1",
+						"source(output(",
+						"          deptno as integer,",
+						"          dname as string,",
+						"          loc as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     batchSize: 0,",
+						"     isolationLevel: 'READ_UNCOMMITTED',",
+						"     format: 'table') ~> source2",
+						"source1, source2 join(source1@deptno == source2@deptno,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join1",
+						"join1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          {Order ID} as string,",
+						"          {Unit Price} as string,",
+						"          {Customer Name} as string,",
+						"          {Product Name} as string,",
+						"          City as string,",
+						"          {Order Date} as string,",
+						"          {Ship Date} as string,",
+						"          {Quantity ordered new} as string",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_otalempdeptwise')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "EmpSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Dept",
+								"type": "DatasetReference"
+							},
+							"name": "DeptSource"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "aggSink"
+						}
+					],
+					"transformations": [
+						{
+							"name": "DeptAggregate"
+						},
+						{
+							"name": "joinempdept"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as integer,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as integer,",
+						"          hiredate as date,",
+						"          sal as integer,",
+						"          comm as integer,",
+						"          deptno as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> EmpSource",
+						"source(output(",
+						"          deptno as integer,",
+						"          dname as string,",
+						"          location as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> DeptSource",
+						"EmpSource aggregate(groupBy(deptno),",
+						"     TotalSalary = sum(sal)) ~> DeptAggregate",
+						"DeptAggregate, DeptSource join(DeptAggregate@deptno == DeptSource@deptno,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> joinempdept",
+						"joinempdept sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['EmpSumSal.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> aggSink"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/df_sort')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV_Emp",
+								"type": "DatasetReference"
+							},
+							"name": "sourceemp"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_Azure_CSV",
+								"type": "DatasetReference"
+							},
+							"name": "sinksort"
+						}
+					],
+					"transformations": [
+						{
+							"name": "sortempdeptno"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          empno as string,",
+						"          ename as string,",
+						"          job as string,",
+						"          mgr as string,",
+						"          hiredate as string,",
+						"          sal as string,",
+						"          comm as string,",
+						"          deptno as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> sourceemp",
+						"sourceemp sort(asc(deptno, true)) ~> sortempdeptno",
+						"sortempdeptno sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['empsort.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sinksort"
+					]
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "rkdatafac"
+		},
+		"LS_Azure_SQL_password": {
+			"value": ""
+		},
+		"LS_Blob_Storage_connectionString": {
+			"value": ""
+		},
+		"LS_Oracle_connectionString": {
+			"value": ""
+		},
+		"LS_Azure_SQL_properties_typeProperties_server": {
+			"value": "rk-azuresqlserver.database.windows.net"
+		},
+		"LS_Azure_SQL_properties_typeProperties_database": {
+			"value": "AzureSQL"
+		},
+		"LS_Azure_SQL_properties_typeProperties_userName": {
+			"value": "RK"
+		}
+	}
+}
