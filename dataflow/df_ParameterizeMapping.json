@@ -1,0 +1,54 @@
+{
+	"name": "df_ParameterizeMapping",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sourceempnew"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkemp"
+				}
+			],
+			"transformations": [
+				{
+					"name": "filterempdata"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     Department as integer",
+				"}",
+				"source(output(",
+				"          id as integer,",
+				"          Name as string,",
+				"          Gender as string,",
+				"          salary as integer,",
+				"          department as integer,",
+				"          location as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceempnew",
+				"sourceempnew filter(department == $Department) ~> filterempdata",
+				"filterempdata sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['emp_param_mapping.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkemp"
+			]
+		}
+	}
+}

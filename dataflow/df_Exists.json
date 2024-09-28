@@ -1,0 +1,70 @@
+{
+	"name": "df_Exists",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV_Emp",
+						"type": "DatasetReference"
+					},
+					"name": "sourceemp"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV_Dept",
+						"type": "DatasetReference"
+					},
+					"name": "sourcdept"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkempdept"
+				}
+			],
+			"transformations": [
+				{
+					"name": "existsempdept"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empno as string,",
+				"          ename as string,",
+				"          job as string,",
+				"          mgr as string,",
+				"          hiredate as string,",
+				"          sal as string,",
+				"          comm as string,",
+				"          deptno as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceemp",
+				"source(output(",
+				"          deptno as string,",
+				"          dname as string,",
+				"          location as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcdept",
+				"sourceemp, sourcdept exists(sourceemp@deptno == sourcdept@deptno,",
+				"     negate:true,",
+				"     broadcast: 'auto')~> existsempdept",
+				"existsempdept sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['deptexists.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkempdept"
+			]
+		}
+	}
+}

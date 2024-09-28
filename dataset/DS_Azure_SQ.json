@@ -1,0 +1,17 @@
+{
+	"name": "DS_Azure_SQ",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_Azure_SQL",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Emp_new"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,77 @@
+{
+	"name": "df_otalempdeptwise",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV_Emp",
+						"type": "DatasetReference"
+					},
+					"name": "EmpSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV_Dept",
+						"type": "DatasetReference"
+					},
+					"name": "DeptSource"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "aggSink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DeptAggregate"
+				},
+				{
+					"name": "joinempdept"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empno as integer,",
+				"          ename as string,",
+				"          job as string,",
+				"          mgr as integer,",
+				"          hiredate as date,",
+				"          sal as integer,",
+				"          comm as integer,",
+				"          deptno as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> EmpSource",
+				"source(output(",
+				"          deptno as integer,",
+				"          dname as string,",
+				"          location as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> DeptSource",
+				"EmpSource aggregate(groupBy(deptno),",
+				"     TotalSalary = sum(sal)) ~> DeptAggregate",
+				"DeptAggregate, DeptSource join(DeptAggregate@deptno == DeptSource@deptno,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinempdept",
+				"joinempdept sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['EmpSumSal.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> aggSink"
+			]
+		}
+	}
+}

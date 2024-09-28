@@ -1,0 +1,56 @@
+{
+	"name": "df_unPivot",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source2",
+						"type": "DatasetReference"
+					},
+					"name": "sourcefruits"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkfruits"
+				}
+			],
+			"transformations": [
+				{
+					"name": "unpivotfruits"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          PO as integer,",
+				"          Vendor as string,",
+				"          Apple as integer,",
+				"          Mango as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcefruits",
+				"sourcefruits unpivot(output(",
+				"          Fruits as string,",
+				"          Amount as integer",
+				"     ),",
+				"     ungroupBy(PO,",
+				"          Vendor),",
+				"     lateral: true,",
+				"     ignoreNullPivots: false) ~> unpivotfruits",
+				"unpivotfruits sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['fruits_unpivot.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkfruits"
+			]
+		}
+	}
+}

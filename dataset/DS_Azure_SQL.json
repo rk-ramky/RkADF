@@ -1,0 +1,55 @@
+{
+	"name": "DS_Azure_SQL",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_Azure_SQL",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "empno",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "ename",
+				"type": "nvarchar"
+			},
+			{
+				"name": "job",
+				"type": "nvarchar"
+			},
+			{
+				"name": "mgr",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "hiredate",
+				"type": "date"
+			},
+			{
+				"name": "sal",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "comm",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "deptno",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "emp"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

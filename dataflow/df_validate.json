@@ -1,0 +1,55 @@
+{
+	"name": "df_validate",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sourcevalidateschema"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkvalidate"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          id as integer,",
+				"          Name as string,",
+				"          Gender as string,",
+				"          salary as integer,",
+				"          department as integer,",
+				"          location as string",
+				"     ),",
+				"     allowSchemaDrift: false,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     preferredIntegralType: 'integer') ~> sourcevalidateschema",
+				"sourcevalidateschema sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['emp_validate.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          id,",
+				"          Name,",
+				"          Gender,",
+				"          salary,",
+				"          department,",
+				"          location",
+				"     ),",
+				"     partitionBy('hash', 1)) ~> sinkvalidate"
+			]
+		}
+	}
+}
