@@ -8,6 +8,9 @@
 		"LS_Azure_SQL_password": {
 			"value": ""
 		},
+		"LS_Azure_SQL_Script_password": {
+			"value": ""
+		},
 		"LS_Blob_Storage_connectionString": {
 			"value": ""
 		},
@@ -22,6 +25,18 @@
 		},
 		"LS_Azure_SQL_properties_typeProperties_userName": {
 			"value": "RK"
+		},
+		"LS_Azure_SQL_Script_properties_typeProperties_server": {
+			"value": "rk-azuresqlserver.database.windows.net"
+		},
+		"LS_Azure_SQL_Script_properties_typeProperties_database": {
+			"value": "AzureSQL"
+		},
+		"LS_Azure_SQL_Script_properties_typeProperties_userName": {
+			"value": "RK"
+		},
+		"RS_API_properties_typeProperties_url": {
+			"value": "https://pokeapi.co/api/v2/pokemon?limit=20&offset={offset}"
 		}
 	}
 }

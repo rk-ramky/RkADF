@@ -11,6 +11,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'LS_Azure_SQL'"
 		},
+		"LS_Azure_SQL_Script_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'LS_Azure_SQL_Script'"
+		},
 		"LS_Blob_Storage_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_Blob_Storage'"
@@ -30,6 +34,22 @@
 		"LS_Azure_SQL_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "RK"
+		},
+		"LS_Azure_SQL_Script_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "rk-azuresqlserver.database.windows.net"
+		},
+		"LS_Azure_SQL_Script_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "AzureSQL"
+		},
+		"LS_Azure_SQL_Script_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "RK"
+		},
+		"RS_API_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://pokeapi.co/api/v2/pokemon?limit=20&offset={offset}"
 		},
 		"containerUri": {
 			"type": "string",
@@ -61,6 +81,9 @@
 					"LS_Azure_SQL_password": {
 						"value": "[parameters('LS_Azure_SQL_password')]"
 					},
+					"LS_Azure_SQL_Script_password": {
+						"value": "[parameters('LS_Azure_SQL_Script_password')]"
+					},
 					"LS_Blob_Storage_connectionString": {
 						"value": "[parameters('LS_Blob_Storage_connectionString')]"
 					},
@@ -75,6 +98,18 @@
 					},
 					"LS_Azure_SQL_properties_typeProperties_userName": {
 						"value": "[parameters('LS_Azure_SQL_properties_typeProperties_userName')]"
+					},
+					"LS_Azure_SQL_Script_properties_typeProperties_server": {
+						"value": "[parameters('LS_Azure_SQL_Script_properties_typeProperties_server')]"
+					},
+					"LS_Azure_SQL_Script_properties_typeProperties_database": {
+						"value": "[parameters('LS_Azure_SQL_Script_properties_typeProperties_database')]"
+					},
+					"LS_Azure_SQL_Script_properties_typeProperties_userName": {
+						"value": "[parameters('LS_Azure_SQL_Script_properties_typeProperties_userName')]"
+					},
+					"RS_API_properties_typeProperties_url": {
+						"value": "[parameters('RS_API_properties_typeProperties_url')]"
 					}
 				}
 			},
@@ -138,6 +173,26 @@
 			},
 			"dependsOn": [
 				"[resourceId('Microsoft.Resources/deployments', 'rkdatafac_ArmTemplate_2')]"
+			]
+		},
+		{
+			"name": "rkdatafac_ArmTemplate_4",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_4.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'rkdatafac_ArmTemplate_3')]"
 			]
 		}
 	]
