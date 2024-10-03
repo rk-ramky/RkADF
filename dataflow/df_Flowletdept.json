@@ -1,0 +1,49 @@
+{
+	"name": "df_Flowletdept",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source2",
+						"type": "DatasetReference"
+					},
+					"name": "sourcedep"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_SQL_Blob",
+						"type": "DatasetReference"
+					},
+					"name": "sinkdep"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggregatedep"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          deptno as integer,",
+				"          dname as string,",
+				"          location as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcedep",
+				"sourcedep aggregate(groupBy(deptno,",
+				"          dname,",
+				"          location),",
+				"     count = count()) ~> aggregatedep",
+				"aggregatedep sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkdep"
+			]
+		}
+	}
+}

@@ -1,0 +1,56 @@
+{
+	"name": "df_Rank",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV_Emp",
+						"type": "DatasetReference"
+					},
+					"name": "sourceemp"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinksal"
+				}
+			],
+			"transformations": [
+				{
+					"name": "ranksal"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empno as integer,",
+				"          ename as string,",
+				"          job as string,",
+				"          mgr as integer,",
+				"          hiredate as date,",
+				"          sal as integer,",
+				"          comm as integer,",
+				"          deptno as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     preferredIntegralType: 'integer') ~> sourceemp",
+				"sourceemp rank(desc(sal, true),",
+				"     output(SalaryRank as long),",
+				"     dense: true) ~> ranksal",
+				"ranksal sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Emp_Rank.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinksal"
+			]
+		}
+	}
+}

@@ -1,0 +1,53 @@
+{
+	"name": "df_filter_trans",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV_Emp",
+						"type": "DatasetReference"
+					},
+					"name": "Emp"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "Emp30"
+				}
+			],
+			"transformations": [
+				{
+					"name": "filteremp"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empno as string,",
+				"          ename as string,",
+				"          job as string,",
+				"          mgr as string,",
+				"          hiredate as string,",
+				"          sal as string,",
+				"          comm as string,",
+				"          deptno as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> Emp",
+				"Emp filter(equals(deptno,'30')) ~> filteremp",
+				"filteremp sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Emp30.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> Emp30"
+			]
+		}
+	}
+}

@@ -1,0 +1,135 @@
+{
+	"name": "df_Cache",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_SQ",
+						"type": "DatasetReference"
+					},
+					"name": "sourceEmployee"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sourceEmployees"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Sqldb",
+						"type": "DatasetReference"
+					},
+					"name": "SrcLocation"
+				}
+			],
+			"sinks": [
+				{
+					"name": "sinkmaxId"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_SQL",
+						"type": "DatasetReference"
+					},
+					"name": "sinkEmp"
+				},
+				{
+					"name": "sinkLoc"
+				}
+			],
+			"transformations": [
+				{
+					"name": "skId"
+				},
+				{
+					"name": "dcExp"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          maxId as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'select max(id) as maxId from employee',",
+				"     format: 'query') ~> sourceEmployee",
+				"source(output(",
+				"          Name as string,",
+				"          department as integer,",
+				"          location as string,",
+				"          Gender as string,",
+				"          salary as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     preferredIntegralType: 'integer') ~> sourceEmployees",
+				"source(output(",
+				"          code as string,",
+				"          Courntry as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> SrcLocation",
+				"sourceEmployees keyGenerate(output(empId as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> skId",
+				"skId derive(empId = empId + sinkmaxId#outputs()[1].maxId,",
+				"          location = sinkLoc#lookup(location).Courntry) ~> dcExp",
+				"sourceEmployee sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1,",
+				"     mapColumn(",
+				"          maxId",
+				"     )) ~> sinkmaxId",
+				"dcExp sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          saleDate as string,",
+				"          salesitem as string,",
+				"          country as string,",
+				"          qunatity as string,",
+				"          FILENAME as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          ID = empId,",
+				"          Name,",
+				"          department,",
+				"          location,",
+				"          Gender,",
+				"          salary",
+				"     )) ~> sinkEmp",
+				"SrcLocation sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     keys:['code'],",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: false,",
+				"     saveOrder: 1,",
+				"     mapColumn(",
+				"          code,",
+				"          Courntry",
+				"     )) ~> sinkLoc"
+			]
+		}
+	}
+}

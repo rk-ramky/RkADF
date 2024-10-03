@@ -1,0 +1,48 @@
+{
+	"name": "df_Var",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_source1",
+						"type": "DatasetReference"
+					},
+					"name": "sourceempinfo"
+				}
+			],
+			"sinks": [
+				{
+					"name": "sinkmaxsal"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggregatesal"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id as integer,",
+				"          Name as string,",
+				"          salary as integer,",
+				"          key as integer,",
+				"          department as integer,",
+				"          location as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceempinfo",
+				"sourceempinfo aggregate(MaxSalary = max(salary)) ~> aggregatesal",
+				"aggregatesal sink(validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     store: 'cache',",
+				"     format: 'inline',",
+				"     output: true,",
+				"     saveOrder: 1) ~> sinkmaxsal"
+			]
+		}
+	}
+}

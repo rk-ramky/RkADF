@@ -1,0 +1,57 @@
+{
+	"name": "df_UDFunctions",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sourceEmployees"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumnudf"
+				}
+			],
+			"udfLibraries": [
+				{
+					"referenceName": "UDFunctions",
+					"type": "DataFlowReference"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Name as string,",
+				"          department as integer,",
+				"          location as string,",
+				"          Gender as string,",
+				"          salary as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     preferredIntegralType: 'integer') ~> sourceEmployees",
+				"sourceEmployees derive(Gender = GenderValue(Gender)) ~> derivedColumnudf",
+				"derivedColumnudf sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['empudf.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}

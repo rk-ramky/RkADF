@@ -1,0 +1,38 @@
+{
+	"name": "DS_Azure_SQL",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_Azure_SQL",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "saleDate",
+				"type": "nvarchar"
+			},
+			{
+				"name": "salesitem",
+				"type": "nvarchar"
+			},
+			{
+				"name": "country",
+				"type": "nvarchar"
+			},
+			{
+				"name": "qunatity",
+				"type": "nvarchar"
+			},
+			{
+				"name": "FILENAME",
+				"type": "nvarchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "SALES_err"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

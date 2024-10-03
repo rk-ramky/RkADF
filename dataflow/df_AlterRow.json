@@ -1,0 +1,65 @@
+{
+	"name": "df_AlterRow",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_source1",
+						"type": "DatasetReference"
+					},
+					"name": "sourcealterrow"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_SQ",
+						"type": "DatasetReference"
+					},
+					"name": "sinkemp"
+				}
+			],
+			"transformations": [
+				{
+					"name": "alterRowempdata"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id as integer,",
+				"          first_name as string,",
+				"          last_name as string,",
+				"          salary as integer,",
+				"          location as string,",
+				"          department as integer,",
+				"          Gender as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcealterrow",
+				"sourcealterrow alterRow(deleteIf(department==50),",
+				"     upsertIf(department==20)) ~> alterRowempdata",
+				"alterRowempdata sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          saleDate as date,",
+				"          salesitem as string,",
+				"          country as string,",
+				"          qunatity as integer,",
+				"          FILENAME as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:true,",
+				"     upsertable:false,",
+				"     keys:['id'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkemp"
+			]
+		}
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"name": "rkdatafac",
+	"properties": {
+		"globalConfigurations": {
+			"PipelineBillingEnabled": "true"
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "4f2c530b-8aba-4852-a64a-f301b0067f85",
+		"tenantId": "a4860c33-2424-41d7-b163-56afa8ac96fa"
+	}
+}

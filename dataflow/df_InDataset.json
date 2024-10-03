@@ -1,0 +1,72 @@
+{
+	"name": "df_InDataset",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "LS_Blob_Storage",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sourceemp"
+				}
+			],
+			"sinks": [
+				{
+					"linkedService": {
+						"referenceName": "LS_Blob_Storage",
+						"type": "LinkedServiceReference"
+					},
+					"name": "sinkemp"
+				}
+			],
+			"transformations": [
+				{
+					"name": "filteremp"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empno as integer,",
+				"          ename as string,",
+				"          job as string,",
+				"          mgr as integer,",
+				"          hiredate as date 'dd-MM-yyyy',",
+				"          sal as integer,",
+				"          comm as integer,",
+				"          deptno as integer",
+				"     ),",
+				"     useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'delimited',",
+				"     container: 'src',",
+				"     fileName: 'Emp.csv',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true) ~> sourceemp",
+				"sourceemp filter(deptno==10) ~> filteremp",
+				"filteremp sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'delimited',",
+				"     container: 'tgt',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          empno,",
+				"          ename,",
+				"          hiredate,",
+				"          sal,",
+				"          deptno",
+				"     )) ~> sinkemp"
+			]
+		}
+	}
+}

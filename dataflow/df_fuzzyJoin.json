@@ -1,0 +1,68 @@
+{
+	"name": "df_fuzzyJoin",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Blob",
+						"type": "DatasetReference"
+					},
+					"name": "Sales"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Blb",
+						"type": "DatasetReference"
+					},
+					"name": "SalesNew"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "joinfuzzy"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Name as string,",
+				"          Item as string,",
+				"          Quantity as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> Sales",
+				"source(output(",
+				"          Name as string,",
+				"          Item as string,",
+				"          Quantity as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> SalesNew",
+				"Sales, SalesNew join(fuzzyCompare(Sales@Name, SalesNew@Name, 82.00),",
+				"     joinType:'inner',",
+				"     matchType:'fuzzy',",
+				"     ignoreSpaces: false,",
+				"     scoreColumn:'Similarity Level',",
+				"     broadcast: 'off')~> joinfuzzy",
+				"joinfuzzy sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['example.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}

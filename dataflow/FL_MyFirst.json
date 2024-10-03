@@ -1,0 +1,45 @@
+{
+	"name": "FL_MyFirst",
+	"properties": {
+		"type": "Flowlet",
+		"typeProperties": {
+			"sources": [],
+			"sinks": [],
+			"transformations": [
+				{
+					"name": "aggregatedup"
+				},
+				{
+					"name": "selectout"
+				},
+				{
+					"name": "inputFlowlet"
+				},
+				{
+					"name": "output"
+				}
+			],
+			"scriptLines": [
+				"input(output(",
+				"          Deptno as integer,",
+				"          Dname as string,",
+				"          Contry as string",
+				"     ),",
+				"     order: 0,",
+				"     allowSchemaDrift: true) ~> inputFlowlet",
+				"inputFlowlet aggregate(groupBy(Deptno,",
+				"          Dname,",
+				"          Contry),",
+				"     count = count()) ~> aggregatedup",
+				"aggregatedup select(mapColumn(",
+				"          Id = Deptno,",
+				"          Name = Dname,",
+				"          Deptno = Contry",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectout",
+				"selectout output() ~> output"
+			]
+		}
+	}
+}

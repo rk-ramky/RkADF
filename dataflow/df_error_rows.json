@@ -1,0 +1,110 @@
+{
+	"name": "df_error_rows",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_source1",
+						"type": "DatasetReference"
+					},
+					"name": "SalesInd"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_SQL",
+						"type": "DatasetReference"
+					},
+					"name": "SalesBad"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_SQ",
+						"type": "DatasetReference"
+					},
+					"name": "SalesGood"
+				}
+			],
+			"transformations": [
+				{
+					"name": "BadRecs"
+				},
+				{
+					"name": "ForExtraColumn"
+				},
+				{
+					"name": "forExtraColumnGood"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          saleDate as string,",
+				"          salesitem as string,",
+				"          country as string,",
+				"          qunatity as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     preferredIntegralType: 'integer') ~> SalesInd",
+				"SalesInd split(isNull(toDate(saleDate,'dd-MMM-yyyy')),",
+				"     disjoint: false) ~> BadRecs@(ErrorRecs, GoodRecs)",
+				"BadRecs@ErrorRecs derive(fileName = 'RK') ~> ForExtraColumn",
+				"BadRecs@GoodRecs derive(FileName = 'RK',",
+				"          saleDate = toDate(saleDate, 'dd-MMM-yyyy'),",
+				"          qunatity = toInteger(qunatity)) ~> forExtraColumnGood",
+				"ForExtraColumn sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          saleDate as string,",
+				"          salesitem as string,",
+				"          country as string,",
+				"          qunatity as string,",
+				"          FILENAME as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          saleDate,",
+				"          salesitem,",
+				"          country,",
+				"          qunatity,",
+				"          FILENAME = fileName",
+				"     )) ~> SalesBad",
+				"forExtraColumnGood sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          saleDate as date,",
+				"          salesitem as string,",
+				"          country as string,",
+				"          qunatity as integer,",
+				"          FILENAME as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          saleDate,",
+				"          salesitem,",
+				"          country,",
+				"          qunatity,",
+				"          FILENAME = FileName",
+				"     )) ~> SalesGood"
+			]
+		}
+	}
+}

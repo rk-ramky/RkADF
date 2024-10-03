@@ -1,0 +1,19 @@
+{
+	"name": "DS_Azure_Source",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_Blob_Storage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "Data.txt",
+				"container": "src"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

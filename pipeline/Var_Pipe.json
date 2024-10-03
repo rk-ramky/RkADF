@@ -1,0 +1,66 @@
+{
+	"name": "Var_Pipe",
+	"properties": {
+		"activities": [
+			{
+				"name": "Data flow max sal",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_Var",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "None",
+					"cacheSinks": {
+						"firstRowOnly": true
+					}
+				}
+			},
+			{
+				"name": "Set variable max sal",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Data flow max sal",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "MaxSalary",
+					"value": {
+						"value": "@activity('Data flow max sal').output.runStatus.output.sinkmaxsal.value[0].MaxSalary",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"variables": {
+			"MaxSalary": {
+				"type": "Integer"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-09-30T13:19:53Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

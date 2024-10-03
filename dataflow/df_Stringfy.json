@@ -1,0 +1,58 @@
+{
+	"name": "df_Stringfy",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Source_Json",
+						"type": "DatasetReference"
+					},
+					"name": "sourcejkjson"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkjkjson"
+				}
+			],
+			"transformations": [
+				{
+					"name": "stringifyjkjson"
+				},
+				{
+					"name": "derivedjkjson"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          name as string,",
+				"          skills as string[],",
+				"          contact as (mobile as string, landline as string)",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'documentPerLine') ~> sourcejkjson",
+				"sourcejkjson stringify(sf_contact = contact ? string,",
+				"     format: 'json') ~> stringifyjkjson",
+				"stringifyjkjson derive(sf_contact = toString(sf_contact)) ~> derivedjkjson",
+				"derivedjkjson sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['jk_stringfy.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          name,",
+				"          contact = sf_contact",
+				"     ),",
+				"     partitionBy('hash', 1)) ~> sinkjkjson"
+			]
+		}
+	}
+}

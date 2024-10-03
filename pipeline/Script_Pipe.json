@@ -1,0 +1,47 @@
+{
+	"name": "Script_Pipe",
+	"properties": {
+		"activities": [
+			{
+				"name": "ExecuteSQL",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_Azure_SQL_Script",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"parameters": [
+								{
+									"name": "name",
+									"type": "String",
+									"value": "RK",
+									"direction": "Input"
+								}
+							],
+							"type": "Query",
+							"text": "SELECT @name as MyName"
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00",
+					"logSettings": {
+						"logDestination": "ActivityOutput"
+					}
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-10-01T12:17:56Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

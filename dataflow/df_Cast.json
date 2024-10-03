@@ -1,0 +1,70 @@
+{
+	"name": "df_Cast",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sourceemployees"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkgood"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkbad"
+				}
+			],
+			"transformations": [
+				{
+					"name": "castempin"
+				},
+				{
+					"name": "splitdate"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empno as string,",
+				"          ename as string,",
+				"          hiredate as string,",
+				"          sal as string,",
+				"          deptno as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceemployees",
+				"sourceemployees cast(output(",
+				"          empno as integer,",
+				"          hiredate as date 'dd/MM/yyyy',",
+				"          sal as integer,",
+				"          deptno as integer",
+				"     ),",
+				"     errors: true) ~> castempin",
+				"castempin split(!isError(),",
+				"     disjoint: false) ~> splitdate@(GoodRecords, BadRecords)",
+				"splitdate@GoodRecords sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkgood",
+				"splitdate@BadRecords sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sinkbad"
+			]
+		}
+	}
+}

@@ -1,0 +1,34 @@
+{
+	"name": "Stringify_Pipe",
+	"properties": {
+		"activities": [
+			{
+				"name": "Data flow stringfy",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_Stringfy",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-10-01T07:54:24Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

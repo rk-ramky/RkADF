@@ -1,0 +1,62 @@
+{
+	"name": "Main_Pipe",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy_Pipe",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Copy_Pipe",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "Script",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Copy_Pipe",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "LS_Azure_SQL",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "insert into tbl_logging values('@{activity('Copy_Pipe').output.pipelineReturnValue.PipeLineName}','@{activity('Copy_Pipe').output.pipelineReturnValue.runId}')",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2024-10-02T10:49:46Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

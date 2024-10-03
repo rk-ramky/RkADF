@@ -1,0 +1,61 @@
+{
+	"name": "df_Flowlet",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sourceempl"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkflowlet"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggregatedup"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Id as integer,",
+				"          Name as string,",
+				"          department as integer,",
+				"          location as string,",
+				"          Gender as string,",
+				"          salary as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceempl",
+				"sourceempl aggregate(groupBy(Id,",
+				"          Name,",
+				"          department,",
+				"          salary),",
+				"     count = count()) ~> aggregatedup",
+				"aggregatedup sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['empflowlet.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          Id,",
+				"          Name,",
+				"          department,",
+				"          salary",
+				"     ),",
+				"     partitionBy('hash', 1)) ~> sinkflowlet"
+			]
+		}
+	}
+}

@@ -1,0 +1,60 @@
+{
+	"name": "df_Select",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV_Emp",
+						"type": "DatasetReference"
+					},
+					"name": "sourceemp"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkselect"
+				}
+			],
+			"transformations": [
+				{
+					"name": "selectemp"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empno as integer,",
+				"          ename as string,",
+				"          job as string,",
+				"          mgr as integer,",
+				"          hiredate as date,",
+				"          sal as integer,",
+				"          comm as integer,",
+				"          deptno as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceemp",
+				"sourceemp select(mapColumn(",
+				"          empNumber = empno,",
+				"          deptno,",
+				"          Ename = ename,",
+				"          salary = sal",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectemp",
+				"selectemp sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['empselect.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkselect"
+			]
+		}
+	}
+}

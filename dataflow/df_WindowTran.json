@@ -1,0 +1,55 @@
+{
+	"name": "df_WindowTran",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV_Emp",
+						"type": "DatasetReference"
+					},
+					"name": "sourcewindowtran"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkwindow"
+				}
+			],
+			"transformations": [
+				{
+					"name": "windowemp"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empno as integer,",
+				"          ename as string,",
+				"          job as string,",
+				"          mgr as integer,",
+				"          hiredate as date,",
+				"          sal as integer,",
+				"          comm as integer,",
+				"          deptno as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcewindowtran",
+				"sourcewindowtran window(over(deptno),",
+				"     desc(sal, true),",
+				"     DenseRank = denseRank()) ~> windowemp",
+				"windowemp sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['emp_window.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkwindow"
+			]
+		}
+	}
+}

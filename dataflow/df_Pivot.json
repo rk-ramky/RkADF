@@ -1,0 +1,56 @@
+{
+	"name": "df_Pivot",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_source1",
+						"type": "DatasetReference"
+					},
+					"name": "sourceEmpNew"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkPivot"
+				}
+			],
+			"transformations": [
+				{
+					"name": "pivotTrans"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          id as string,",
+				"          first_name as string,",
+				"          last_name as string,",
+				"          email as string,",
+				"          location as string,",
+				"          department as string,",
+				"          Gender as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceEmpNew",
+				"sourceEmpNew pivot(groupBy(department),",
+				"     pivotBy(Gender),",
+				"     {} = count(id),",
+				"     columnNaming: 'Total_$N$V_Employees',",
+				"     lateral: true) ~> pivotTrans",
+				"pivotTrans sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['EmpPivot.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkPivot"
+			]
+		}
+	}
+}

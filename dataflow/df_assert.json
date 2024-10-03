@@ -1,0 +1,76 @@
+{
+	"name": "df_assert",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sourceemp"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV_Dept",
+						"type": "DatasetReference"
+					},
+					"name": "sourcedept"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "sinkempdept"
+				}
+			],
+			"transformations": [
+				{
+					"name": "assertemp"
+				},
+				{
+					"name": "derivedColumnerror"
+				},
+				{
+					"name": "filterunwanted"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empno as integer,",
+				"          ename as string,",
+				"          hiredate as string,",
+				"          sal as integer,",
+				"          deptno as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceemp",
+				"source(output(",
+				"          deptno as integer,",
+				"          dname as string,",
+				"          location as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcedept",
+				"sourceemp, sourcedept assert(expectTrue(!isNull(toDate(hiredate, 'yyyyMMdd')), false, 'assertdoj', null, 'checking date of join'),",
+				"     expectUnique(empno, false, 'assertempid', null, 'valid emp id'),",
+				"     expectExists(sourceemp@deptno == sourcedept@deptno, false, 'assertdeptno', null, 'valid from dept table')) ~> assertemp",
+				"assertemp derive(IsErrorRow = isError(),",
+				"          IsInCorrectDeptrow = hasError('assertdeptno')) ~> derivedColumnerror",
+				"derivedColumnerror filter(IsErrorRow == false()) ~> filterunwanted",
+				"filterunwanted sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['empassert.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkempdept"
+			]
+		}
+	}
+}
