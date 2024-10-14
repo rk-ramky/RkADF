@@ -1,24 +1,28 @@
 {
-	"name": "DS_Azure_Source3",
+	"name": "FileDataFolder",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "LS_Blob_Storage",
 			"type": "LinkedServiceReference"
 		},
+		"parameters": {
+			"FileName": {
+				"type": "string"
+			}
+		},
 		"annotations": [],
-		"type": "DelimitedText",
+		"type": "Binary",
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().FileName",
+					"type": "Expression"
+				},
 				"folderPath": "output",
-				"container": "ark"
-			},
-			"columnDelimiter": ",",
-			"escapeChar": "\\",
-			"firstRowAsHeader": true,
-			"quoteChar": "\""
-		},
-		"schema": []
+				"container": "foreach"
+			}
+		}
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
 }

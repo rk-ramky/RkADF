@@ -1,5 +1,5 @@
 {
-	"name": "DS_Azure_Source2",
+	"name": "DS_Azure_Rule",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "LS_Blob_Storage",
@@ -10,7 +10,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "Employ_ref.csv",
+				"fileName": "Rule.csv",
 				"folderPath": "input",
 				"container": "ark"
 			},
@@ -19,24 +19,7 @@
 			"firstRowAsHeader": true,
 			"quoteChar": "\""
 		},
-		"schema": [
-			{
-				"name": "EmpId",
-				"type": "String"
-			},
-			{
-				"name": "Name",
-				"type": "String"
-			},
-			{
-				"name": "Country",
-				"type": "String"
-			},
-			{
-				"name": "Department",
-				"type": "String"
-			}
-		]
+		"schema": []
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
 }

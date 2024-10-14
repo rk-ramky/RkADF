@@ -1,0 +1,54 @@
+{
+	"name": "df_MergeCols",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_source1",
+						"type": "DatasetReference"
+					},
+					"name": "EmployesSource"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sinkempskills"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggforGroupby"
+				},
+				{
+					"name": "dcforseperatecolumns"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          empid as string,",
+				"          empname as string,",
+				"          skills as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> EmployesSource",
+				"EmployesSource aggregate(groupBy(empid,",
+				"          empname),",
+				"     skills = collect(skills)) ~> aggforGroupby",
+				"aggforGroupby derive(skills = replace(replace(replace(toString(skills),'[',''),']',''),'\"','')) ~> dcforseperatecolumns",
+				"dcforseperatecolumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['empSkills.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkempskills"
+			]
+		}
+	}
+}

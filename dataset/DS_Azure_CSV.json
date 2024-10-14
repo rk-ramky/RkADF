@@ -10,15 +10,33 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "pokeAPI.csv",
-				"container": "tgt"
+				"fileName": "Order.csv",
+				"folderPath": "input",
+				"container": "ark"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
 			"firstRowAsHeader": true,
 			"quoteChar": "\""
 		},
-		"schema": []
+		"schema": [
+			{
+				"name": "custId",
+				"type": "String"
+			},
+			{
+				"name": "CustName",
+				"type": "String"
+			},
+			{
+				"name": "itemName",
+				"type": "String"
+			},
+			{
+				"name": "quantity",
+				"type": "String"
+			}
+		]
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
 }

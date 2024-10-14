@@ -1,9 +1,9 @@
 {
-	"name": "Lookup_Pipe",
+	"name": "Rule_Pipe",
 	"properties": {
 		"activities": [
 			{
-				"name": "LookupArray",
+				"name": "Lookup1",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
@@ -27,18 +27,18 @@
 						}
 					},
 					"dataset": {
-						"referenceName": "DS_Azure_Source2",
+						"referenceName": "DS_Azure_Rule",
 						"type": "DatasetReference"
 					},
 					"firstRowOnly": false
 				}
 			},
 			{
-				"name": "ForEachLookupRow",
+				"name": "ForEach1",
 				"type": "ForEach",
 				"dependsOn": [
 					{
-						"activity": "LookupArray",
+						"activity": "Lookup1",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -47,66 +47,55 @@
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@activity('LookupArray').output.value",
+						"value": "@activity('Lookup1').output.value",
 						"type": "Expression"
 					},
 					"isSequential": true,
 					"activities": [
 						{
-							"name": "Set Emails",
-							"type": "SetVariable",
-							"dependsOn": [
-								{
-									"activity": "Set temp Emails",
-									"dependencyConditions": [
-										"Succeeded"
-									]
-								}
-							],
-							"policy": {
-								"secureOutput": false,
-								"secureInput": false
-							},
-							"userProperties": [],
-							"typeProperties": {
-								"variableName": "Emails",
-								"value": {
-									"value": "@variables('temp_Email')",
-									"type": "Expression"
-								}
-							}
-						},
-						{
-							"name": "Set temp Emails",
-							"type": "SetVariable",
+							"name": "Data flow1",
+							"type": "ExecuteDataFlow",
 							"dependsOn": [],
 							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
 								"secureOutput": false,
 								"secureInput": false
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"variableName": "temp_Email",
-								"value": {
-									"value": "@concat(item().Email,';',variables('Emails'))",
-									"type": "Expression"
-								}
+								"dataflow": {
+									"referenceName": "dataflow1",
+									"type": "DataFlowReference",
+									"parameters": {
+										"FilterRule": {
+											"value": "'@{item().rule}'",
+											"type": "Expression"
+										}
+									},
+									"datasetParameters": {
+										"source1": {
+											"filename": {
+												"value": "@item().filename",
+												"type": "Expression"
+											}
+										}
+									}
+								},
+								"compute": {
+									"coreCount": 8,
+									"computeType": "General"
+								},
+								"traceLevel": "Fine"
 							}
 						}
 					]
 				}
 			}
 		],
-		"variables": {
-			"Emails": {
-				"type": "String"
-			},
-			"temp_Email": {
-				"type": "String"
-			}
-		},
 		"annotations": [],
-		"lastPublishTime": "2024-10-12T11:08:51Z"
+		"lastPublishTime": "2024-10-12T14:03:53Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }

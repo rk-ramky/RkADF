@@ -1,0 +1,49 @@
+{
+	"name": "df_RunTot",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_source1",
+						"type": "DatasetReference"
+					},
+					"name": "Order"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "ordertottgt"
+				}
+			],
+			"transformations": [
+				{
+					"name": "RunTot"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          PO as string,",
+				"          itemname as string,",
+				"          quantity as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> Order",
+				"Order window(asc(PO, true),",
+				"     RunningTotal = sum(toInteger(quantity))) ~> RunTot",
+				"RunTot sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['orderruntot.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> ordertottgt"
+			]
+		}
+	}
+}

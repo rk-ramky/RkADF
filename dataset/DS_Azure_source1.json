@@ -10,7 +10,7 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "SalesIND_2020_MAY_01.csv",
+				"fileName": "Email.csv",
 				"folderPath": "input",
 				"container": "ark"
 			},
@@ -21,19 +21,15 @@
 		},
 		"schema": [
 			{
-				"name": "saleDate",
+				"name": "empid",
 				"type": "String"
 			},
 			{
-				"name": "salesitem",
+				"name": "empname",
 				"type": "String"
 			},
 			{
-				"name": "country",
-				"type": "String"
-			},
-			{
-				"name": "qunatity",
+				"name": "skills",
 				"type": "String"
 			}
 		]

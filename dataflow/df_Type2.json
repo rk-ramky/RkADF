@@ -1,0 +1,167 @@
+{
+	"name": "df_Type2",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_source1",
+						"type": "DatasetReference"
+					},
+					"name": "srcEmploy"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_SQ",
+						"type": "DatasetReference"
+					},
+					"name": "tgtEmploytype2"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_SQ",
+						"type": "DatasetReference"
+					},
+					"name": "EmploySink"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_SQ",
+						"type": "DatasetReference"
+					},
+					"name": "UpdateSink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "dcAddColumnIsActive"
+				},
+				{
+					"name": "selectRenameColumns"
+				},
+				{
+					"name": "lkpSrcSink"
+				},
+				{
+					"name": "filExistingEmploys"
+				},
+				{
+					"name": "seltoremoveunwantedcolumns"
+				},
+				{
+					"name": "alterRow"
+				},
+				{
+					"name": "dcupdateisActive"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          EmpId as integer,",
+				"          Name as string,",
+				"          Country as string,",
+				"          Department as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> srcEmploy",
+				"source(output(",
+				"          surrKey as integer,",
+				"          empid as integer,",
+				"          Name as string,",
+				"          Country as string,",
+				"          Department as integer,",
+				"          isActive as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> tgtEmploytype2",
+				"srcEmploy derive(isActive = 1) ~> dcAddColumnIsActive",
+				"tgtEmploytype2 select(mapColumn(",
+				"          SQL_surrKey = surrKey,",
+				"          SQL_empid = empid,",
+				"          SQL_Name = Name,",
+				"          SQL_Country = Country,",
+				"          SQL_Department = Department,",
+				"          SQL_isActive = isActive",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectRenameColumns",
+				"srcEmploy, selectRenameColumns lookup(EmpId == SQL_empid,",
+				"     multiple: true,",
+				"     broadcast: 'auto')~> lkpSrcSink",
+				"lkpSrcSink filter(!isNull(SQL_empid)) ~> filExistingEmploys",
+				"filExistingEmploys select(mapColumn(",
+				"          SQL_surrKey,",
+				"          SQL_empid,",
+				"          SQL_Name,",
+				"          SQL_Country,",
+				"          SQL_Department,",
+				"          SQL_isActive",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> seltoremoveunwantedcolumns",
+				"dcupdateisActive alterRow(updateIf(1==1)) ~> alterRow",
+				"seltoremoveunwantedcolumns derive(SQL_isActive = 0) ~> dcupdateisActive",
+				"dcAddColumnIsActive sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          surrKey as integer,",
+				"          empid as integer,",
+				"          Name as string,",
+				"          Country as string,",
+				"          Department as integer,",
+				"          isActive as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 2,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          empid = EmpId,",
+				"          Name,",
+				"          Country,",
+				"          Department,",
+				"          isActive",
+				"     )) ~> EmploySink",
+				"alterRow sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          surrKey as integer,",
+				"          empid as integer,",
+				"          Name as string,",
+				"          Country as string,",
+				"          Department as integer,",
+				"          isActive as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:true,",
+				"     upsertable:false,",
+				"     keys:['surrKey'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     saveOrder: 1,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          surrKey = SQL_surrKey,",
+				"          empid = SQL_empid,",
+				"          Name = SQL_Name,",
+				"          Country = SQL_Country,",
+				"          Department = SQL_Department,",
+				"          isActive = SQL_isActive",
+				"     )) ~> UpdateSink"
+			]
+		}
+	}
+}

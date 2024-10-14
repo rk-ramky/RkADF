@@ -1,9 +1,9 @@
 {
-	"name": "Lookup_Pipe",
+	"name": "Lookup1_Pipe",
 	"properties": {
 		"activities": [
 			{
-				"name": "LookupArray",
+				"name": "LookupEmails",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
@@ -34,11 +34,11 @@
 				}
 			},
 			{
-				"name": "ForEachLookupRow",
+				"name": "ForEachEmail",
 				"type": "ForEach",
 				"dependsOn": [
 					{
-						"activity": "LookupArray",
+						"activity": "LookupEmails",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -47,61 +47,57 @@
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@activity('LookupArray').output.value",
+						"value": "@activity('LookupEmails').output.value",
 						"type": "Expression"
 					},
 					"isSequential": true,
 					"activities": [
 						{
-							"name": "Set Emails",
-							"type": "SetVariable",
-							"dependsOn": [
-								{
-									"activity": "Set temp Emails",
-									"dependencyConditions": [
-										"Succeeded"
-									]
-								}
-							],
-							"policy": {
-								"secureOutput": false,
-								"secureInput": false
-							},
-							"userProperties": [],
-							"typeProperties": {
-								"variableName": "Emails",
-								"value": {
-									"value": "@variables('temp_Email')",
-									"type": "Expression"
-								}
-							}
-						},
-						{
-							"name": "Set temp Emails",
-							"type": "SetVariable",
+							"name": "Append Email values",
+							"type": "AppendVariable",
 							"dependsOn": [],
-							"policy": {
-								"secureOutput": false,
-								"secureInput": false
-							},
 							"userProperties": [],
 							"typeProperties": {
-								"variableName": "temp_Email",
+								"variableName": "EmailsArry",
 								"value": {
-									"value": "@concat(item().Email,';',variables('Emails'))",
+									"value": "@item().email",
 									"type": "Expression"
 								}
 							}
 						}
 					]
 				}
+			},
+			{
+				"name": "Set email string",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "ForEachEmail",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "EmailString",
+					"value": {
+						"value": "@join(variables('EmailsArry'),';')",
+						"type": "Expression"
+					}
+				}
 			}
 		],
 		"variables": {
-			"Emails": {
-				"type": "String"
+			"EmailsArry": {
+				"type": "Array"
 			},
-			"temp_Email": {
+			"EmailString": {
 				"type": "String"
 			}
 		},

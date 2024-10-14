@@ -1,0 +1,108 @@
+{
+	"name": "df_Incr",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_source1",
+						"type": "DatasetReference"
+					},
+					"name": "sourcetgt"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source2",
+						"type": "DatasetReference"
+					},
+					"name": "sourcesrc"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sinkorg"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggMaxId"
+				},
+				{
+					"name": "dcdummy"
+				},
+				{
+					"name": "joinsrctgt"
+				},
+				{
+					"name": "skId"
+				},
+				{
+					"name": "dcsum"
+				},
+				{
+					"name": "selecttorcols"
+				},
+				{
+					"name": "unionwithsrc"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Id as string,",
+				"          Name as string,",
+				"          department as string,",
+				"          location as string,",
+				"          Gender as string,",
+				"          salary as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcetgt",
+				"source(output(",
+				"          Name as string,",
+				"          department as string,",
+				"          location as string,",
+				"          Gender as string,",
+				"          salary as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourcesrc",
+				"dcdummy aggregate(groupBy(dummy),",
+				"     MaxId = max(Id)) ~> aggMaxId",
+				"sourcetgt derive(dummy = 'dummy') ~> dcdummy",
+				"aggMaxId, sourcesrc join(1==1,",
+				"     joinType:'cross',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinsrctgt",
+				"joinsrctgt keyGenerate(output(Id as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> skId",
+				"skId derive(Id = toString(toInteger(Id) + toInteger(MaxId))) ~> dcsum",
+				"dcsum select(mapColumn(",
+				"          Id,",
+				"          Name,",
+				"          department,",
+				"          location,",
+				"          Gender,",
+				"          salary",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selecttorcols",
+				"sourcetgt, selecttorcols union(byName: true)~> unionwithsrc",
+				"unionwithsrc sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['emporg.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkorg"
+			]
+		}
+	}
+}

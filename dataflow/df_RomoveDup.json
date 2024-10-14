@@ -1,0 +1,72 @@
+{
+	"name": "df_RomoveDup",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_source1",
+						"type": "DatasetReference"
+					},
+					"name": "sourceEmployee"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source2",
+						"type": "DatasetReference"
+					},
+					"name": "sourceEmployees"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sinkunion"
+				}
+			],
+			"transformations": [
+				{
+					"name": "unionEmps"
+				},
+				{
+					"name": "aggdeleteduplicates"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Name as string,",
+				"          department as string,",
+				"          location as string,",
+				"          Gender as string,",
+				"          salary as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceEmployee",
+				"source(output(",
+				"          Name as string,",
+				"          department as string,",
+				"          location as string,",
+				"          Gender as string,",
+				"          salary as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceEmployees",
+				"sourceEmployee, sourceEmployees union(byName: true)~> unionEmps",
+				"unionEmps aggregate(groupBy(Name),",
+				"     each(match(name!='Name'), $$ = first($$))) ~> aggdeleteduplicates",
+				"aggdeleteduplicates sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['emporiginals.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sinkunion"
+			]
+		}
+	}
+}

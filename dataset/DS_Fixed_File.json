@@ -1,5 +1,5 @@
 {
-	"name": "DS_Azure_Source2",
+	"name": "DS_Fixed_File",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "LS_Blob_Storage",
@@ -10,30 +10,17 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "Employ_ref.csv",
+				"fileName": "Emp_Fixed.txt",
 				"folderPath": "input",
 				"container": "ark"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
-			"firstRowAsHeader": true,
+			"firstRowAsHeader": false,
 			"quoteChar": "\""
 		},
 		"schema": [
 			{
-				"name": "EmpId",
-				"type": "String"
-			},
-			{
-				"name": "Name",
-				"type": "String"
-			},
-			{
-				"name": "Country",
-				"type": "String"
-			},
-			{
-				"name": "Department",
 				"type": "String"
 			}
 		]

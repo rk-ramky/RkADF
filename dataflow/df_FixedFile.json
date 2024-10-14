@@ -1,0 +1,68 @@
+{
+	"name": "df_FixedFile",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Fixed_File",
+						"type": "DatasetReference"
+					},
+					"name": "EmpFixed"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "fixedsink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "derivedColumnforColumns"
+				},
+				{
+					"name": "RemoveColumn1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Column_1 as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> EmpFixed",
+				"EmpFixed derive(empno = substring(Column_1, 1, 5),",
+				"          ename = substring(Column_1, 6, 6),",
+				"          job = substring(Column_1, 12, 9),",
+				"          mgr = substring(Column_1, 22, 4),",
+				"          hiredate = substring(Column_1, 25, 10),",
+				"          sal = substring(Column_1, 35, 4),",
+				"          comm = substring(Column_1, 39,4),",
+				"          deptno = substring(Column_1, 43, 45)) ~> derivedColumnforColumns",
+				"derivedColumnforColumns select(mapColumn(",
+				"          empno,",
+				"          ename,",
+				"          job,",
+				"          mgr,",
+				"          hiredate,",
+				"          sal,",
+				"          comm,",
+				"          deptno",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RemoveColumn1",
+				"RemoveColumn1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['emp_fixed.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> fixedsink"
+			]
+		}
+	}
+}

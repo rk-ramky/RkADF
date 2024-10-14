@@ -1,0 +1,61 @@
+{
+	"name": "df_CSVtoJSON",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_CSV",
+						"type": "DatasetReference"
+					},
+					"name": "Order"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Azure_Source3",
+						"type": "DatasetReference"
+					},
+					"name": "sinkOrder"
+				}
+			],
+			"transformations": [
+				{
+					"name": "OrderComplex"
+				},
+				{
+					"name": "aggregateoncustId"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          custId as string,",
+				"          CustName as string,",
+				"          itemName as string,",
+				"          quantity as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> Order",
+				"Order derive(Purchases = @(itemName=itemName,",
+				"          quantity=quantity)) ~> OrderComplex",
+				"OrderComplex aggregate(groupBy(custId,",
+				"          CustName),",
+				"     Purchases = collect(Purchases)) ~> aggregateoncustId",
+				"aggregateoncustId sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Json.json'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          custId,",
+				"          CustName,",
+				"          Purchases",
+				"     ),",
+				"     partitionBy('hash', 1)) ~> sinkOrder"
+			]
+		}
+	}
+}

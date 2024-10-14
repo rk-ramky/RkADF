@@ -1,22 +1,29 @@
 {
-	"name": "DS_Azure_Source3",
+	"name": "DS_Excel_Input",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "LS_Blob_Storage",
 			"type": "LinkedServiceReference"
 		},
+		"parameters": {
+			"sheetIndex": {
+				"type": "int"
+			}
+		},
 		"annotations": [],
-		"type": "DelimitedText",
+		"type": "Excel",
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"folderPath": "output",
+				"fileName": "Demo.xlsx",
+				"folderPath": "input",
 				"container": "ark"
 			},
-			"columnDelimiter": ",",
-			"escapeChar": "\\",
-			"firstRowAsHeader": true,
-			"quoteChar": "\""
+			"sheetIndex": {
+				"value": "@dataset().sheetIndex",
+				"type": "Expression"
+			},
+			"firstRowAsHeader": true
 		},
 		"schema": []
 	},

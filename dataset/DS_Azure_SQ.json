@@ -9,30 +9,37 @@
 		"type": "AzureSqlTable",
 		"schema": [
 			{
-				"name": "saleDate",
-				"type": "date"
-			},
-			{
-				"name": "salesitem",
-				"type": "varchar"
-			},
-			{
-				"name": "country",
-				"type": "varchar"
-			},
-			{
-				"name": "qunatity",
+				"name": "surrKey",
 				"type": "int",
 				"precision": 10
 			},
 			{
-				"name": "FILENAME",
-				"type": "varchar"
+				"name": "empid",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Country",
+				"type": "nvarchar"
+			},
+			{
+				"name": "Department",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "isActive",
+				"type": "int",
+				"precision": 10
 			}
 		],
 		"typeProperties": {
 			"schema": "dbo",
-			"table": "SALES"
+			"table": "employ_type2"
 		}
 	},
 	"type": "Microsoft.DataFactory/factories/datasets"
