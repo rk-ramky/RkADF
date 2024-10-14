@@ -5,6 +5,9 @@
 		"factoryName": {
 			"value": "rkdatafac"
 		},
+		"AzureDataLakeStorage1_accountKey": {
+			"value": ""
+		},
 		"LS_Azure_SQL_password": {
 			"value": ""
 		},
@@ -16,6 +19,9 @@
 		},
 		"LS_Oracle_connectionString": {
 			"value": ""
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"value": "https://rkstoragecontainer.dfs.core.windows.net/"
 		},
 		"LS_Azure_SQL_properties_typeProperties_server": {
 			"value": "rk-azuresqlserver.database.windows.net"
@@ -36,7 +42,7 @@
 			"value": "RK"
 		},
 		"RS_API_properties_typeProperties_url": {
-			"value": "https://pokeapi.co/api/v2/pokemon?limit=20&offset={offset}"
+			"value": "https://reqres.in/api/users"
 		}
 	}
 }
